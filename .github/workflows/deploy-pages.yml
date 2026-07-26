@@ -1,6 +1,11 @@
-# Deployt die statische App bei jedem Push auf main direkt zu GitHub Pages.
-# Damit ist der Hauptbranch die alleinige Quelle – ein separater
-# gh-pages-Branch wird nicht mehr benötigt.
+# Veröffentlicht die App bei jedem Push auf main.
+#
+# Hintergrund: GitHub Pages wurde für dieses Repo automatisch mit dem
+# gh-pages-Branch als Quelle aktiviert, und die Schutzregel der
+# github-pages-Umgebung erlaubt nur Deployments von diesem Branch.
+# Dieser Workflow spiegelt deshalb den Stand von main nach gh-pages –
+# entwickelt und gepusht wird ausschließlich auf main, gh-pages ist nur
+# noch ein automatisch verwaltetes Deploy-Artefakt.
 name: Deploy to GitHub Pages
 
 on:
@@ -9,37 +14,26 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write   # zum Aktualisieren des gh-pages-Branches
 
-# Nur ein Pages-Deployment gleichzeitig; ältere laufende werden abgebrochen
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  publish:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout
+      - name: Checkout main
         uses: actions/checkout@v4
 
-      # Stellt sicher, dass Pages aktiviert und auf "GitHub Actions" als Quelle gestellt ist
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      # Das gesamte Repo-Root als Artefakt hochladen (die App ist eine einzelne index.html)
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      # Den kompletten Stand von main als neuen gh-pages-Stand pushen.
+      # force-push ist hier gewollt: gh-pages hat keine eigene Historie.
+      - name: Publish to gh-pages branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan gh-pages
+          git add -A
+          git commit -m "Deploy ${GITHUB_SHA::7} from main"
+          git push --force origin gh-pages
