@@ -34,6 +34,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout --orphan gh-pages
+          # .github nicht mitveröffentlichen: gehört nicht zur Website, und
+          # der GITHUB_TOKEN darf ohnehin keine Workflow-Dateien pushen
+          rm -rf .github
           git add -A
           git commit -m "Deploy ${GITHUB_SHA::7} from main"
           git push --force origin gh-pages
